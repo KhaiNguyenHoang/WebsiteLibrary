@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -7,44 +8,58 @@ using WebsiteLibrary.Models.Interface;
 
 namespace WebsiteLibrary.Models.Service
 {
-    public class FineService : IFineService
+    public class LoanService : ILoanService
     {
         private readonly LibraryDatabaseContext _context;
 
-        public FineService(LibraryDatabaseContext context)
+        public LoanService(LibraryDatabaseContext context)
         {
             _context = context;
         }
 
-        public async Task AddFineAsync(Fine fine)
+        public async Task CreateLoanAsync(Loan loan)
         {
-            _context.Fines.Add(fine);
+            _context.Loans.Add(loan);
             await _context.SaveChangesAsync();
         }
 
-        public async Task UpdateFineStatusAsync(int fineId, string status)
+        public async Task ReturnBookAsync(int loanId, DateTime returnDate)
         {
-            var fine = await _context.Fines.FindAsync(fineId);
-            if (fine == null)
-                throw new KeyNotFoundException("Fine not found");
+            var loan = await _context.Loans.FindAsync(loanId);
+            if (loan == null)
+                throw new KeyNotFoundException("Loan not found");
 
-            fine.Status = status;
+            loan.ReturnDate = returnDate;
+            loan.Status = "Returned";
             await _context.SaveChangesAsync();
         }
 
-        public async Task<IEnumerable<Fine>> GetFinesByMemberIdAsync(int memberId)
+        public async Task<IEnumerable<Loan>> GetLoansByMemberIdAsync(int memberId)
         {
-            return await _context.Fines
-                .Include(f => f.Loan)
-                .Where(f => f.Loan.MemberId == memberId)
+            return await _context.Loans
+                .Include(l => l.Loandetails)
+                .ThenInclude(ld => ld.Book)
+                .Where(l => l.MemberId == memberId)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Fine>> GetUnpaidFinesAsync()
+        public async Task<IEnumerable<Loan>> GetLoansByStatusAsync(string status)
         {
-            return await _context.Fines
-                .Where(f => f.Status == "Unpaid")
+            return await _context.Loans
+                .Include(l => l.Loandetails)
+                .ThenInclude(ld => ld.Book)
+                .Where(l => l.Status == status)
                 .ToListAsync();
+        }
+
+        public async Task MarkLoanAsOverdueAsync(int loanId)
+        {
+            var loan = await _context.Loans.FindAsync(loanId);
+            if (loan == null)
+                throw new KeyNotFoundException("Loan not found");
+
+            loan.Status = "Overdue";
+            await _context.SaveChangesAsync();
         }
     }
 }
