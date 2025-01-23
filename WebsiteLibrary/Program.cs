@@ -22,6 +22,7 @@ namespace WebsiteLibrary
             builder.Services.AddScoped<ISupplierService, SupplierService>();
             builder.Services.AddScoped<ISupplierService, SupplierService>();
             builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<IReportService, ReportService>();
             
             var app = builder.Build();
 
